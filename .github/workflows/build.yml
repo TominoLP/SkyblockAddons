@@ -13,11 +13,7 @@ on:
     paths:
       - '**.java'
   workflow_dispatch:
-    inputs:
-      upload_artifact:
-        description: 'Upload artifact to this run? [yes | no]'
-        required: false
-        default: 'no'
+
 jobs:
   build:
     name: Build
@@ -48,11 +44,22 @@ jobs:
       with:
         path: gradle.properties
         property: version
-    - name: Upload Artifact
-      if: ${{ env.UPLOAD_ARTIFACT_ENABLED || contains(github.event.inputs.upload_artifact, 'yes') }}
-      env:
-        project_version: ${{ steps.read_project_version.outputs.value }}
-      uses: actions/upload-artifact@v2
+    - name: Release Artifacts
+      if: github.ref_name == env.branch
+      uses: marvinpinto/action-automatic-releases@latest
       with:
-        name: SkyblockAddons v${{ env.project_version }}+${{ env.ORG_GRADLE_PROJECT_buildNumber }}
-        path: build/libs/*
+        title: "Release #${{ env.workflow }}"
+        automatic_release_tag: release-${{ env.workflow }}
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        files: build/libs/*.jar
+        prerelease: false
+
+    - name: Release Artifacts (Latest)
+      if: github.ref_name == env.branch
+      uses: marvinpinto/action-automatic-releases@latest
+      with:
+        title: "Release #${{ env.workflow }}"
+        automatic_release_tag: latest-${{ env.version }}
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        files: build/libs/*.jar
+        prerelease: false
